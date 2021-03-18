@@ -11,8 +11,6 @@ import (
 	//"bufio"
 )
 
-//var wg sync.WaitGroup
-
 type Product struct {
 	_1 string //"id"
 	_2 string //"Description"
@@ -28,13 +26,10 @@ type Product struct {
 	_12 string
 }
 
-func csv_to_struct(products chan Product) {
-	//defer wg.Done()
+func csv_to_struct() []Product{
 	csv_file, err := os.Open("sample2.csv")
 	if err != nil {
 		fmt.Println(err)
-		close(products)
-		return
 	}
 	defer csv_file.Close()
 
@@ -42,12 +37,11 @@ func csv_to_struct(products chan Product) {
 	records, err := r.ReadAll()
 	if err != nil {
 		fmt.Println(err)
-		close(products)
 		os.Exit(1)
 	}
 
 	var p Product
-
+	var products []Product
 	for _, rec := range records {
 		p._1 = rec[0]
 		p._2 = rec[1]
@@ -61,27 +55,26 @@ func csv_to_struct(products chan Product) {
 		p._10 = rec[9]
 		p._11 = rec[10]
 		p._12 = rec[11]
-		products <- p
+		products = append(products, p)
 	}
-	close(products)
+	return products
 
 }
 
-func struct_to_yaml(products chan Product, finit chan bool) {
-
+func struct_to_yaml(products []Product) {
 	f, err := os.Create("sample.yaml")
 	if err != nil {
-		close(products)
+		panic(err)
 	}
-	i := 0
-	for products:= range products {
-		pString := []byte("-" + strconv.Itoa(i) + ":\n" + "street: " + products._1 +
-			"\ncity: " + products._2 + "\nzip: " + products._3 + "\nstate: " +
-			products._4 + "\nbeds: " + products._5 + "\nbaths: " +
-			products._6 + "\nsq__ft: " + products._7 + "\ntype: " +
-			products._8 + "\nsale_date: " + products._9 + "\nprice: " +
-			products._10 + "\nlatitude: " + products._11 + "\nlongitude: " +
-			products._12 + "\n")
+
+	for i:= range products {
+		pString := []byte("-" + strconv.Itoa(i) + ":\n" + "street: " + products[i]._1 +
+			"\ncity: " + products[i]._2 + "\nzip: " + products[i]._3 + "\nstate: " +
+			products[i]._4 + "\nbeds: " + products[i]._5 + "\nbaths: " +
+			products[i]._6 + "\nsq__ft: " + products[i]._7 + "\ntype: " +
+			products[i]._8 + "\nsale_date: " + products[i]._9 + "\nprice: " +
+			products[i]._10 + "\nlatitude: " + products[i]._11 + "\nlongitude: " +
+			products[i]._12 + "\n")
 		n, err2 := f.Write(pString)
 		if err2 != nil {
 			panic(err2)
@@ -91,19 +84,11 @@ func struct_to_yaml(products chan Product, finit chan bool) {
 		//err := ioutil.("sample.yaml", pString, 0644)
 
 	}
-	finit<-true
 }
 
 func main() {
 	start := time.Now()
-	products := make(chan Product)
-	finit := make(chan bool)
-	//wg.Add(1)
-	go csv_to_struct(products)
-	go struct_to_yaml(products, finit)
-	//go csv_to_struct(products)
-	//go struct_to_yaml(products, finit)
-	<-finit
-	//wg.Wait()
-	fmt.Printf("Process complete: ", time.Since(start))
+	products := csv_to_struct()
+	go struct_to_yaml(products)
+	fmt.Printf("Process complete", time.Since(start))
 }
