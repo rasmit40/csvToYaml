@@ -89,6 +89,6 @@ func struct_to_yaml(products []Product) {
 func main() {
 	start := time.Now()
 	products := csv_to_struct()
-	go struct_to_yaml(products)
+	struct_to_yaml(products)
 	fmt.Printf("Process complete", time.Since(start))
 }
