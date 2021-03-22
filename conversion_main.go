@@ -14,23 +14,13 @@ import (
 //var wg sync.WaitGroup
 
 type Product struct {
-	_1 string //"id"
-	_2 string //"Description"
-	_3 string //"Name"
-	_4 string //"number1"
-	_5 string //"number2"
-	_6 string //"number3"
-	_7 string //"number4"
-	_8 string
-	_9 string
-	_10 string
-	_11 string
-	_12 string
+	titles []string
+	columns []string
 }
 
 func csv_to_struct(products chan Product) {
 	//defer wg.Done()
-	csv_file, err := os.Open("sample2.csv")
+	csv_file, err := os.Open("FL_insurance_sample.csv")
 	if err != nil {
 		fmt.Println(err)
 		close(products)
@@ -47,21 +37,20 @@ func csv_to_struct(products chan Product) {
 	}
 
 	var p Product
-
+	in := 0
 	for _, rec := range records {
-		p._1 = rec[0]
-		p._2 = rec[1]
-		p._3 = rec[2]
-		p._4 = rec[3]
-		p._5 = rec[4]
-		p._6 = rec[5]
-		p._7 = rec[6]
-		p._8 = rec[7]
-		p._9 = rec[8]
-		p._10 = rec[9]
-		p._11 = rec[10]
-		p._12 = rec[11]
+		if in == 0 {
+			for i := range rec {
+				p.titles = append(p.titles, rec[i])
+			}
+		} else {
+			for i := range rec {
+				p.columns = append(p.columns, rec[i])
+			}
+		}
+		in++
 		products <- p
+		p.columns = nil
 	}
 	close(products)
 
@@ -73,23 +62,25 @@ func struct_to_yaml(products chan Product, finit chan bool) {
 	if err != nil {
 		close(products)
 	}
-	i := 0
+	i:= 0
 	for products:= range products {
-		pString := []byte("-" + strconv.Itoa(i) + ":\n" + "street: " + products._1 +
-			"\ncity: " + products._2 + "\nzip: " + products._3 + "\nstate: " +
-			products._4 + "\nbeds: " + products._5 + "\nbaths: " +
-			products._6 + "\nsq__ft: " + products._7 + "\ntype: " +
-			products._8 + "\nsale_date: " + products._9 + "\nprice: " +
-			products._10 + "\nlatitude: " + products._11 + "\nlongitude: " +
-			products._12 + "\n")
-		n, err2 := f.Write(pString)
+		var pString string
+		if i > 0 {
+			pString = "-" + strconv.Itoa(i) + ":\n"
+		}
+		x := 0
+		for _, in := range products.columns {
+			pString = pString + products.titles[x]+": " + in+"\n"
+			x++
+		}
+		pByte := []byte(pString)
+		n, err2 := f.Write(pByte)
 		if err2 != nil {
 			panic(err2)
 		}
-		i++
 		fmt.Printf(string(n), "\n")
 		//err := ioutil.("sample.yaml", pString, 0644)
-
+		i++
 	}
 	finit<-true
 }
